@@ -29,7 +29,7 @@ export function AuthModal() {
       if (tab === "signup") {
         const result = await signUp(form.name, form.email, form.password);
         if (result === "confirm-email") {
-          setNotice("Account created. Check your email to confirm it, then sign in.");
+          setNotice("Account created. You can sign in now.");
           setTab("login");
         }
       } else {
