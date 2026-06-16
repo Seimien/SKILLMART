@@ -17,10 +17,10 @@ major_version = 17
 
 [auth]
 enabled = true
-site_url = "https://smartmartt.vercel.app"
+site_url = "https://skillmartt.vercel.app"
 additional_redirect_urls = [
-  "https://smartmartt.vercel.app",
-  "https://smartmartt.vercel.app/**",
+  "https://skillmartt.vercel.app",
+  "https://skillmartt.vercel.app/**",
   "http://localhost:5173",
   "http://localhost:5173/**"
 ]
