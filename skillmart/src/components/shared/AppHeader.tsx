@@ -51,7 +51,7 @@ export function AppHeader() {
         </button>
 
         {/* Desktop nav */}
-        <nav className="hidden md:flex items-center gap-1">{NAV.map(navBtn)}</nav>
+        <nav className="hidden lg:flex items-center gap-1">{NAV.map(navBtn)}</nav>
 
         {/* Right actions */}
         <div className="flex items-center gap-1">
@@ -81,13 +81,13 @@ export function AppHeader() {
           </button>
 
           {/* Avatar */}
-          <button onClick={() => go("profile")} className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-lg hover:bg-[var(--secondary)] transition-colors">
+          <button onClick={() => go("profile")} className="hidden sm:flex items-center gap-2 pl-1 pr-2 py-1 rounded-lg hover:bg-[var(--secondary)] transition-colors">
             <AvatarBubble initials={user?.avatar ?? "U"} size="sm" className="bg-[var(--primary)] text-white" />
             <span className="text-sm font-medium hidden sm:block">{user?.name.split(" ")[0]}</span>
           </button>
 
           {/* Mobile menu toggle */}
-          <button onClick={() => setOpen(!open)} className="md:hidden p-2 rounded-lg hover:bg-[var(--secondary)] transition-colors">
+          <button onClick={() => setOpen(!open)} className="lg:hidden p-2 rounded-lg hover:bg-[var(--secondary)] transition-colors">
             {open ? <X size={19} /> : <Menu size={19} />}
           </button>
         </div>
@@ -95,7 +95,7 @@ export function AppHeader() {
 
       {/* Mobile nav drawer */}
       {open && (
-        <div className="md:hidden border-t border-[var(--border)] bg-[var(--background)] px-4 py-3 flex flex-col gap-1">
+        <div className="lg:hidden border-t border-[var(--border)] bg-[var(--background)] px-4 py-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
           {NAV.map(navBtn)}
         </div>
       )}

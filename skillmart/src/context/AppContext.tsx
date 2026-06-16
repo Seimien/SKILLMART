@@ -5,6 +5,7 @@ import {
   createListing,
   createOrder,
   deleteListing,
+  ensureProfile,
   getDownloadUrl,
   getProfile,
   listMessages,
@@ -17,6 +18,7 @@ import {
   updateProfile,
 } from "../lib/api";
 import type { CartItem, Category, Message, Order, Product, Screen, User } from "../types";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 interface NewListingInput {
   title: string;
@@ -65,7 +67,7 @@ interface AppCtx {
   isAuthenticated: boolean;
   user: User | null;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (name: string, email: string, password: string) => Promise<void>;
+  signUp: (name: string, email: string, password: string) => Promise<"signed-in" | "confirm-email">;
   logout: () => Promise<void>;
   authModal: "none" | "login" | "signup";
   setAuthModal: (v: "none" | "login" | "signup") => void;
@@ -109,9 +111,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setSelectedProduct((current) => nextProducts.find((p) => p.id === current?.id) ?? current);
   }, []);
 
-  const loadUserData = useCallback(async (userId: string) => {
-    const [profile, nextOrders, nextWishlist] = await Promise.all([
-      getProfile(userId),
+  const loadUserData = useCallback(async (authUser: SupabaseUser) => {
+    let profile: User;
+
+    try {
+      profile = await getProfile(authUser.id);
+    } catch (error) {
+      const code = typeof error === "object" && error && "code" in error ? String(error.code) : "";
+      if (code !== "PGRST116") throw error;
+      profile = await ensureProfile({
+        userId: authUser.id,
+        email: authUser.email ?? "",
+        fullName: typeof authUser.user_metadata?.full_name === "string" ? authUser.user_metadata.full_name : undefined,
+      });
+    }
+
+    const [nextOrders, nextWishlist] = await Promise.all([
       listOrders(),
       listWishlist(),
     ]);
@@ -131,7 +146,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         await refreshProducts();
 
         if (data.session?.user && active) {
-          await loadUserData(data.session.user.id);
+          await loadUserData(data.session.user);
           setScreen("dashboard");
         }
       } catch (error) {
@@ -152,7 +167,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      loadUserData(session.user.id).catch((error) => {
+      loadUserData(session.user).catch((error) => {
         console.error(error);
         toast.error("Could not load your account.");
       });
@@ -194,7 +209,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const signIn = useCallback(async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
-    if (data.user) await loadUserData(data.user.id);
+    if (data.user) await loadUserData(data.user);
     setAuthModal("none");
     go("dashboard");
   }, [go, loadUserData]);
@@ -207,9 +222,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
 
     if (error) throw error;
-    if (data.user) await loadUserData(data.user.id);
+
+    if (!data.session) {
+      return "confirm-email";
+    }
+
+    if (data.user) await loadUserData(data.user);
     setAuthModal("none");
     go("dashboard");
+    return "signed-in";
   }, [go, loadUserData]);
 
   const logout = useCallback(async () => {

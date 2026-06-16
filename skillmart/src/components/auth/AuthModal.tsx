@@ -7,6 +7,7 @@ export function AuthModal() {
   const [tab, setTab] = useState<"login" | "signup">("login");
   const [form, setForm] = useState({ name: "", email: "", password: "", confirm: "" });
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => { setTab(authModal === "signup" ? "signup" : "login"); }, [authModal]);
@@ -21,11 +22,16 @@ export function AuthModal() {
     if (tab === "signup" && !form.name) return setError("Please enter your full name.");
     if (tab === "signup" && form.password !== form.confirm) return setError("Passwords do not match.");
     setError("");
+    setNotice("");
     setBusy(true);
 
     try {
       if (tab === "signup") {
-        await signUp(form.name, form.email, form.password);
+        const result = await signUp(form.name, form.email, form.password);
+        if (result === "confirm-email") {
+          setNotice("Account created. Check your email to confirm it, then sign in.");
+          setTab("login");
+        }
       } else {
         await signIn(form.email, form.password);
       }
@@ -59,7 +65,7 @@ export function AuthModal() {
         {/* Tabs */}
         <div className="flex border-b border-[var(--border)]">
           {(["login", "signup"] as const).map((t) => (
-            <button key={t} onClick={() => { setTab(t); setError(""); }}
+            <button key={t} onClick={() => { setTab(t); setError(""); setNotice(""); }}
               className={`flex-1 py-3 text-sm font-semibold transition-colors ${tab === t ? "text-[var(--primary)] border-b-2 border-[var(--primary)]" : "text-[var(--muted-fg)] hover:text-[var(--foreground)]"}`}>
               {t === "login" ? "Sign In" : "Sign Up"}
             </button>
@@ -90,6 +96,11 @@ export function AuthModal() {
               {error}
             </p>
           )}
+          {notice && (
+            <p className="text-xs text-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 px-3 py-2 rounded-lg border border-emerald-100 dark:border-emerald-800">
+              {notice}
+            </p>
+          )}
           {tab === "login" && (
             <button className="text-xs text-[var(--primary)] text-right hover:underline self-end -mt-2">Forgot password?</button>
           )}
@@ -100,7 +111,7 @@ export function AuthModal() {
 
           <p className="text-center text-xs text-[var(--muted-fg)]">
             {tab === "login" ? "No account?" : "Already have an account?"}{" "}
-            <button onClick={() => setTab(tab === "login" ? "signup" : "login")}
+            <button onClick={() => { setTab(tab === "login" ? "signup" : "login"); setError(""); setNotice(""); }}
               className="text-[var(--primary)] font-semibold hover:underline">
               {tab === "login" ? "Sign up free" : "Sign in"}
             </button>

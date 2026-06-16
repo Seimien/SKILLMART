@@ -173,6 +173,24 @@ export async function getProfile(userId: string) {
   return mapProfile(data as ProfileRow);
 }
 
+export async function ensureProfile(input: { userId: string; email: string; fullName?: string }) {
+  const fullName = input.fullName || input.email.split("@")[0] || "SkillMart User";
+  const { data, error } = await supabase
+    .from("profiles")
+    .insert({
+      id: input.userId,
+      email: input.email,
+      full_name: fullName,
+      avatar_initials: initials(fullName),
+      bio: "SkillMart seller and buyer",
+    })
+    .select("*")
+    .single();
+
+  if (error) throw error;
+  return mapProfile(data as ProfileRow);
+}
+
 export async function updateProfile(userId: string, input: {
   fullName: string;
   bio: string;
