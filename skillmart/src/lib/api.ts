@@ -280,10 +280,13 @@ export async function createListing(input: {
       badge: "New",
     };
 
+    // Important: avoid embedding `profiles` here.
+    // `PGRST201` can happen if PostgREST detects more than one relationship
+    // from `products` to `profiles`.
     const { data, error } = await supabase
       .from("products")
       .insert(payload)
-      .select("*, profiles(full_name, avatar_initials)")
+      .select("*")
       .single();
 
     if (error) {
