@@ -1,0 +1,76 @@
+@import './theme.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Map CSS vars to Tailwind-compatible class names ── */
+@layer base {
+  * { @apply border-[var(--border)] box-border; }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Scrollbar — subtle on all pages */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+}
+
+/* ── Reusable semantic bg/text shorthands ── */
+@layer utilities {
+  .bg-page      { background-color: var(--background); }
+  .bg-card      { background-color: var(--card); }
+  .bg-muted     { background-color: var(--muted); }
+  .bg-input     { background-color: var(--input-bg); }
+  .bg-primary   { background-color: var(--primary); }
+  .bg-secondary { background-color: var(--secondary); }
+  .bg-accent    { background-color: var(--accent); }
+
+  .text-page    { color: var(--foreground); }
+  .text-card    { color: var(--card-foreground); }
+  .text-muted   { color: var(--muted-fg); }
+  .text-primary { color: var(--primary); }
+
+  .border-base  { border-color: var(--border); }
+
+  /* Brand button */
+  .btn-primary {
+    @apply bg-primary text-white font-semibold rounded-xl transition-opacity hover:opacity-90 active:scale-95;
+    background-color: var(--primary);
+  }
+  .btn-secondary {
+    @apply font-semibold rounded-xl transition-colors;
+    background-color: var(--secondary);
+    color: var(--foreground);
+    border: 1px solid var(--border);
+  }
+
+  /* Card shell */
+  .card {
+    background-color: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  /* Input shell */
+  .input {
+    background-color: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--foreground);
+    @apply w-full px-3 py-2.5 text-sm outline-none transition-all;
+  }
+  .input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 15%, transparent);
+  }
+
+  /* Hide scrollbar (for scroll shelves) */
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+}

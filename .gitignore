@@ -1,0 +1,7 @@
+.cursor/
+skillmart/node_modules/
+skillmart/dist/
+skillmart/.env.local
+skillmart/.env*.local
+supabase/.branches/
+supabase/.temp/

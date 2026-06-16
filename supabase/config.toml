@@ -1,0 +1,16 @@
+# SkillMart Supabase project (linked via MCP)
+# Project: SKILMART | ref: sizdcltnguxxeibygxik
+# Dashboard: https://supabase.com/dashboard/project/sizdcltnguxxeibygxik
+
+project_id = "sizdcltnguxxeibygxik"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+major_version = 17
