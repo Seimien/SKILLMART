@@ -255,17 +255,20 @@ export async function createListing(input: {
 }) {
   let filePath: string | null = null;
 
-  if (input.file) {
-    filePath = `${input.sellerId}/${crypto.randomUUID()}-${input.file.name}`;
-    const { error: uploadError } = await supabase.storage
-      .from("listing-files")
-      .upload(filePath, input.file);
-    if (uploadError) throw uploadError;
-  }
+  // Helpful diagnostics: this is the only place where listing creation talks to
+  // storage + the products table.
+  try {
+    if (input.file) {
+      filePath = `${input.sellerId}/${crypto.randomUUID()}-${input.file.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from("listing-files")
+        .upload(filePath, input.file);
+      if (uploadError) {
+        throw new Error(`Storage upload failed: ${uploadError.message}`);
+      }
+    }
 
-  const { data, error } = await supabase
-    .from("products")
-    .insert({
+    const payload = {
       seller_id: input.sellerId,
       title: input.title,
       category: input.category,
@@ -275,12 +278,29 @@ export async function createListing(input: {
       image_url: input.imageUrl || fallbackImage,
       file_path: filePath,
       badge: "New",
-    })
-    .select("*, profiles(full_name, avatar_initials)")
-    .single();
+    };
 
-  if (error) throw error;
-  return mapProduct(data as ProductRow);
+    const { data, error } = await supabase
+      .from("products")
+      .insert(payload)
+      .select("*, profiles(full_name, avatar_initials)")
+      .single();
+
+    if (error) {
+      throw new Error(`Products insert failed: ${error.message}`);
+    }
+
+    return mapProduct(data as ProductRow);
+  } catch (e) {
+    // Surface *real* Supabase/PostgREST errors in the UI.
+    if (e instanceof Error) throw e;
+
+    try {
+      throw new Error(`Listing could not be created: ${JSON.stringify(e)}`);
+    } catch {
+      throw new Error(`Listing could not be created: ${String(e)}`);
+    }
+  }
 }
 
 export async function deleteListing(productId: string) {
