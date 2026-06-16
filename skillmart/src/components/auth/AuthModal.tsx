@@ -1,6 +1,7 @@
 import { Lock, LogIn, Mail, Store, User, UserPlus, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useApp } from "../../context/AppContext";
+import { authErrorMessage, friendlyAuthError, normalizeEmail } from "../../lib/auth";
 
 export function AuthModal() {
   const { authModal, setAuthModal, signIn, signUp } = useApp();
@@ -18,25 +19,29 @@ export function AuthModal() {
     setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const submit = async () => {
-    if (!form.email || !form.password) return setError("Please fill in all fields.");
-    if (tab === "signup" && !form.name) return setError("Please enter your full name.");
-    if (tab === "signup" && form.password !== form.confirm) return setError("Passwords do not match.");
+    const email = normalizeEmail(form.email);
+    const password = form.password;
+
+    if (!email || !password) return setError("Please fill in all fields.");
+    if (tab === "signup" && !form.name.trim()) return setError("Please enter your full name.");
+    if (password.length < 6) return setError("Password must be at least 6 characters.");
+    if (tab === "signup" && password !== form.confirm) return setError("Passwords do not match.");
     setError("");
     setNotice("");
     setBusy(true);
 
     try {
       if (tab === "signup") {
-        const result = await signUp(form.name, form.email, form.password);
+        const result = await signUp(form.name.trim(), email, password);
         if (result === "confirm-email") {
-          setNotice("Account created. You can sign in now.");
+          setNotice("Account created. Check your email for a confirmation link, then sign in.");
           setTab("login");
         }
       } else {
-        await signIn(form.email, form.password);
+        await signIn(email, password);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Authentication failed.");
+      setError(friendlyAuthError(authErrorMessage(err)));
     } finally {
       setBusy(false);
     }

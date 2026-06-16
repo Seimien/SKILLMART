@@ -177,13 +177,13 @@ export async function ensureProfile(input: { userId: string; email: string; full
   const fullName = input.fullName || input.email.split("@")[0] || "SkillMart User";
   const { data, error } = await supabase
     .from("profiles")
-    .insert({
+    .upsert({
       id: input.userId,
       email: input.email,
       full_name: fullName,
       avatar_initials: initials(fullName),
       bio: "SkillMart seller and buyer",
-    })
+    }, { onConflict: "id" })
     .select("*")
     .single();
 

@@ -23,7 +23,7 @@ export default function App() {
 
   /* Pre-auth screens render full-bleed, no header */
   if (screen === "splash") return <Splash />;
-  if (screen === "landing" || !isAuthenticated) return <><Landing /><AuthModal /></>;
+  if (!isAuthenticated) return <><Landing /><AuthModal /></>;
 
   /* Authenticated shell */
   const SCREEN_MAP: Record<string, React.ReactNode> = {

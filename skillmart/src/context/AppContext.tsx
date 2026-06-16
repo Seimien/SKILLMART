@@ -17,6 +17,7 @@ import {
   setWishlistItem,
   updateProfile,
 } from "../lib/api";
+import { normalizeEmail } from "../lib/auth";
 import type { CartItem, Category, Message, Order, Product, Screen, User } from "../types";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
@@ -80,6 +81,29 @@ interface AppCtx {
 const Ctx = createContext<AppCtx>({} as AppCtx);
 export const useApp = () => useContext(Ctx);
 
+function userFromAuth(authUser: SupabaseUser): User {
+  const fullName = typeof authUser.user_metadata?.full_name === "string"
+    ? authUser.user_metadata.full_name
+    : authUser.email?.split("@")[0] ?? "SkillMart User";
+  const parts = fullName.trim().split(/\s+/);
+
+  return {
+    id: authUser.id,
+    name: fullName,
+    email: authUser.email ?? "",
+    avatar: `${parts[0]?.[0] ?? "S"}${parts[1]?.[0] ?? "M"}`.toUpperCase(),
+    bio: "SkillMart seller and buyer",
+    joinedDate: "Now",
+    totalEarned: 0,
+    totalSales: 0,
+    rating: 0,
+    phone: "",
+    payoutMethod: "manual",
+    payoutDetails: "",
+    isAdmin: false,
+  };
+}
+
 export function AppProvider({ children }: { children: ReactNode }) {
   const [screen, setScreen] = useState<Screen>("splash");
   const [loading, setLoading] = useState(true);
@@ -126,15 +150,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
       });
     }
 
-    const [nextOrders, nextWishlist] = await Promise.all([
+    setUser(profile);
+
+    const [ordersResult, wishlistResult, messagesResult] = await Promise.allSettled([
       listOrders(),
       listWishlist(),
+      listMessages(),
     ]);
 
-    setUser(profile);
-    setOrders(nextOrders);
-    setWishlist(nextWishlist);
-    setMessages(await listMessages());
+    if (ordersResult.status === "fulfilled") setOrders(ordersResult.value);
+    if (wishlistResult.status === "fulfilled") setWishlist(wishlistResult.value);
+    if (messagesResult.status === "fulfilled") setMessages(messagesResult.value);
+
+    [ordersResult, wishlistResult, messagesResult].forEach((result) => {
+      if (result.status === "rejected") console.error(result.reason);
+    });
   }, []);
 
   useEffect(() => {
@@ -146,12 +176,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
         await refreshProducts();
 
         if (data.session?.user && active) {
-          await loadUserData(data.session.user);
+          setUser(userFromAuth(data.session.user));
+          try {
+            await loadUserData(data.session.user);
+          } catch (e) {
+            console.error("loadUserData failed during bootstrap:", e);
+            toast.error(`Dashboard data failed to load: ${e instanceof Error ? e.message : "Unknown error"}`);
+            throw e;
+          }
           setScreen("dashboard");
         }
       } catch (error) {
-        console.error(error);
-        toast.error("Could not load SkillMart data.");
+        console.error("bootstrap auth/dashboard failed:", error);
+        toast.error(`Could not load SkillMart data: ${error instanceof Error ? error.message : "Unknown error"}`);
       } finally {
         if (active) setLoading(false);
       }
@@ -159,17 +196,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     bootstrap();
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session?.user) {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT") {
         setUser(null);
         setOrders([]);
         setWishlist([]);
+        setMessages([]);
         return;
       }
 
+      if (!session?.user) return;
+
+      setUser(userFromAuth(session.user));
       loadUserData(session.user).catch((error) => {
         console.error(error);
-        toast.error("Could not load your account.");
+        toast.error("Signed in, but some account data could not load.");
       });
     });
 
@@ -207,27 +248,47 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const clearCart = useCallback(() => setCart([]), []);
 
   const signIn = useCallback(async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: normalizeEmail(email),
+      password,
+    });
     if (error) throw error;
-    if (data.user) await loadUserData(data.user);
+    if (data.user) {
+      setUser(userFromAuth(data.user));
+      loadUserData(data.user).catch((loadError) => {
+        console.error(loadError);
+        toast.error("Signed in, but some account data could not load.");
+      });
+    }
     setAuthModal("none");
     go("dashboard");
   }, [go, loadUserData]);
 
   const signUp = useCallback(async (name: string, email: string, password: string) => {
+    const normalizedEmail = normalizeEmail(email);
     const { data, error } = await supabase.auth.signUp({
-      email,
+      email: normalizedEmail,
       password,
       options: { data: { full_name: name } },
     });
 
     if (error) throw error;
 
+    if (data.user?.identities?.length === 0) {
+      throw new Error("User already registered");
+    }
+
     if (!data.session) {
       return "confirm-email";
     }
 
-    if (data.user) await loadUserData(data.user);
+    if (data.user) {
+      setUser(userFromAuth(data.user));
+      loadUserData(data.user).catch((loadError) => {
+        console.error(loadError);
+        toast.error("Account created, but some account data could not load.");
+      });
+    }
     setAuthModal("none");
     go("dashboard");
     return "signed-in";
