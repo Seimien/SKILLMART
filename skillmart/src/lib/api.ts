@@ -88,7 +88,10 @@ export function mapProfile(row: ProfileRow): User {
     email: row.email,
     avatar: row.avatar_initials || initials(row.full_name),
     bio: row.bio,
-    joinedDate: new Date(row.created_at).toLocaleDateString("en-US", { month: "short", year: "numeric" }),
+    joinedDate: new Date(row.created_at).toLocaleDateString("en-US", {
+      month: "short",
+      year: "numeric",
+    }),
     totalEarned: Number(row.total_earned ?? 0),
     totalSales: Number(row.total_sales ?? 0),
     rating: Number(row.rating ?? 0),
@@ -125,7 +128,11 @@ export function mapProduct(row: ProductRow): Product {
 export function mapOrder(row: OrderRow): Order {
   return {
     id: row.id.slice(0, 8).toUpperCase(),
-    date: new Date(row.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+    date: new Date(row.created_at).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }),
     total: Number(row.total),
     status: row.status,
     paymentMethod: row.payment_method,
@@ -168,22 +175,35 @@ export function mapMessage(row: MessageRow): Message {
 }
 
 export async function getProfile(userId: string) {
-  const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).single();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", userId)
+    .single();
   if (error) throw error;
   return mapProfile(data as ProfileRow);
 }
 
-export async function ensureProfile(input: { userId: string; email: string; fullName?: string }) {
-  const fullName = input.fullName || input.email.split("@")[0] || "SkillMart User";
+export async function ensureProfile(input: {
+  userId: string;
+  email: string;
+  fullName?: string;
+}) {
+  const fullName =
+    input.fullName || input.email.split("@")[0] || "SkillMart User";
+
   const { data, error } = await supabase
     .from("profiles")
-    .upsert({
-      id: input.userId,
-      email: input.email,
-      full_name: fullName,
-      avatar_initials: initials(fullName),
-      bio: "SkillMart seller and buyer",
-    }, { onConflict: "id" })
+    .upsert(
+      {
+        id: input.userId,
+        email: input.email,
+        full_name: fullName,
+        avatar_initials: initials(fullName),
+        bio: "SkillMart seller and buyer",
+      },
+      { onConflict: "id" }
+    )
     .select("*")
     .single();
 
@@ -191,13 +211,16 @@ export async function ensureProfile(input: { userId: string; email: string; full
   return mapProfile(data as ProfileRow);
 }
 
-export async function updateProfile(userId: string, input: {
-  fullName: string;
-  bio: string;
-  phone: string;
-  payoutMethod: string;
-  payoutDetails: string;
-}) {
+export async function updateProfile(
+  userId: string,
+  input: {
+    fullName: string;
+    bio: string;
+    phone: string;
+    payoutMethod: string;
+    payoutDetails: string;
+  }
+) {
   const { data, error } = await supabase
     .from("profiles")
     .update({
@@ -230,7 +253,9 @@ export async function listProducts() {
 export async function listOrders() {
   const { data, error } = await supabase
     .from("orders")
-    .select("*, order_items(id, product_id, seller_id, title, unit_price, quantity, delivery_status, delivered_at, products(category, image_url, file_path, profiles(full_name, avatar_initials)))")
+    .select(
+      "*, order_items(id, product_id, seller_id, title, unit_price, quantity, delivery_status, delivered_at, products(category, image_url, file_path, profiles(full_name, avatar_initials)))"
+    )
     .order("created_at", { ascending: false });
 
   if (error) throw error;
@@ -238,7 +263,9 @@ export async function listOrders() {
 }
 
 export async function listWishlist() {
-  const { data, error } = await supabase.from("wishlists").select("product_id");
+  const { data, error } = await supabase
+    .from("wishlists")
+    .select("product_id");
   if (error) throw error;
   return (data ?? []).map((row) => row.product_id as string);
 }
@@ -263,39 +290,64 @@ export async function createListing(input: {
     if (uploadError) throw uploadError;
   }
 
-  const { data, error } = await supabase
-    .from("products")
-    .insert({
-      seller_id: input.sellerId,
-      title: input.title,
-      category: input.category,
-      price: input.price,
-      description: input.description,
-      tags: input.tags,
-      image_url: input.imageUrl || fallbackImage,
-      file_path: filePath,
-      badge: "New",
-    })
-    .select("*, profiles(full_name, avatar_initials)")
-    .single();
+  // Important: avoid embedding `profiles` on the insert return representation.
+  // PostgREST can error if it detects multiple relationships.
+  const payload = {
+    seller_id: input.sellerId,
+    title: input.title,
+    category: input.category,
+    price: input.price,
+    description: input.description,
+    tags: input.tags,
+    image_url: input.imageUrl || fallbackImage,
+    file_path: filePath,
+    badge: "New",
+  };
 
-  if (error) throw error;
-  return mapProduct(data as ProductRow);
+  try {
+    const { data, error } = await supabase
+      .from("products")
+      .insert(payload)
+      .select("*")
+      .single();
+
+    if (error) {
+      throw new Error(`Products insert failed: ${error.message}`);
+    }
+
+    return mapProduct(data as ProductRow);
+  } catch (e) {
+    if (e instanceof Error) throw e;
+    throw new Error(`Listing could not be created: ${String(e)}`);
+  }
 }
 
 export async function deleteListing(productId: string) {
-  const { error } = await supabase.from("products").delete().eq("id", productId);
+  const { error } = await supabase
+    .from("products")
+    .delete()
+    .eq("id", productId);
   if (error) throw error;
 }
 
-export async function setWishlistItem(userId: string, productId: string, active: boolean) {
+export async function setWishlistItem(
+  userId: string,
+  productId: string,
+  active: boolean
+) {
   if (active) {
-    const { error } = await supabase.from("wishlists").insert({ user_id: userId, product_id: productId });
+    const { error } = await supabase
+      .from("wishlists")
+      .insert({ user_id: userId, product_id: productId });
     if (error && error.code !== "23505") throw error;
     return;
   }
 
-  const { error } = await supabase.from("wishlists").delete().eq("user_id", userId).eq("product_id", productId);
+  const { error } = await supabase
+    .from("wishlists")
+    .delete()
+    .eq("user_id", userId)
+    .eq("product_id", productId);
   if (error) throw error;
 }
 
@@ -326,17 +378,19 @@ export async function createOrder(input: {
 
   if (error) throw error;
 
-  const { error: itemsError } = await supabase.from("order_items").insert(
-    input.cart.map((item) => ({
-      order_id: order.id,
-      product_id: item.id,
-      seller_id: item.sellerId,
-      title: item.title,
-      unit_price: item.price,
-      quantity: item.qty,
-      delivery_status: "pending",
-    }))
-  );
+  const { error: itemsError } = await supabase
+    .from("order_items")
+    .insert(
+      input.cart.map((item) => ({
+        order_id: order.id,
+        product_id: item.id,
+        seller_id: item.sellerId,
+        title: item.title,
+        unit_price: item.price,
+        quantity: item.qty,
+        delivery_status: "pending",
+      }))
+    );
 
   if (itemsError) throw itemsError;
 
@@ -354,7 +408,10 @@ export async function createOrder(input: {
         category: item.category,
         image_url: item.image,
         file_path: item.filePath ?? null,
-        profiles: { full_name: item.seller, avatar_initials: item.sellerAvatar },
+        profiles: {
+          full_name: item.seller,
+          avatar_initials: item.sellerAvatar,
+        },
       },
     })),
   });
@@ -363,7 +420,9 @@ export async function createOrder(input: {
 export async function listMessages() {
   const { data, error } = await supabase
     .from("messages")
-    .select("*, products(title), buyer:buyer_id(full_name), seller:seller_id(full_name)")
+    .select(
+      "*, products(title), buyer:buyer_id(full_name), seller:seller_id(full_name)"
+    )
     .order("created_at", { ascending: false });
 
   if (error) throw error;
@@ -386,7 +445,9 @@ export async function sendMessage(input: {
       sender_id: input.senderId,
       body: input.body,
     })
-    .select("*, products(title), buyer:buyer_id(full_name), seller:seller_id(full_name)")
+    .select(
+      "*, products(title), buyer:buyer_id(full_name), seller:seller_id(full_name)"
+    )
     .single();
 
   if (error) throw error;
@@ -396,7 +457,10 @@ export async function sendMessage(input: {
 export async function markOrderItemDelivered(orderItemId: string) {
   const { error } = await supabase
     .from("order_items")
-    .update({ delivery_status: "delivered", delivered_at: new Date().toISOString() })
+    .update({
+      delivery_status: "delivered",
+      delivered_at: new Date().toISOString(),
+    })
     .eq("id", orderItemId);
 
   if (error) throw error;
@@ -410,3 +474,4 @@ export async function getDownloadUrl(filePath: string) {
   if (error) throw error;
   return data.signedUrl;
 }
+
