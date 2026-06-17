@@ -1,0 +1,10 @@
+services:
+  skillmart-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      # nginx listens on 80
+      - "8080:80"
+    restart: unless-stopped
+

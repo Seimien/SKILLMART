@@ -96,25 +96,19 @@ npm run dev
 
 Opens at `http://localhost:5173`. Hot reload is enabled — edit any screen file and it updates instantly.
 
-## What's Implemented
+## Run with Docker
 
-- Full auth flow (mock — no real backend yet): signup/login modal, logged-in state
-- Marketplace: search, category filter, sort (popular/newest/price)
-- Product detail page with related items, wishlist, add to cart
-- Cart with quantity controls and platform fee calculation
-- 3-step checkout (Contact → Payment → Review) with card/M-Pesa toggle
-- Seller dashboard (My Store) with Listings / Sales / Analytics tabs
-- Add Listing form
-- Profile page with order history
-- Dark mode toggle — wired and on-brand (no more blue swap)
-- Toast notifications for cart actions (via `sonner`)
+This repo includes:
+- `Dockerfile` (multi-stage build + nginx runtime)
+- `docker-compose.yml` (single service)
+- `nginx.conf` (SPA route fallback)
 
-## What's Next (Backend — tomorrow)
+Build and start:
 
-Replace `src/data/mock.ts` calls with Supabase queries:
-- `products` table → Marketplace, ProductDetail, Dashboard feeds
-- `users` table + Supabase Auth → AuthModal, Profile
-- `orders` table → Checkout, Confirmation, MyStore Sales tab
-- Supabase Storage → file uploads in AddListing
+```bash
+docker compose up --build
+```
 
-All mock data lives in one file (`src/data/mock.ts`) specifically so it's a single swap point when the backend is ready.
+Open:
+- `http://localhost:8080`
+
