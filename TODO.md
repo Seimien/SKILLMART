@@ -7,6 +7,7 @@
 - [x] Update `skillmart/README.md` with Docker build/run commands
 - [ ] Create git branch `blackboxai/docker-containerize`
 - [ ] Commit changes and push to GitHub
-- [ ] Provide evidence: run `docker compose build` and `docker compose up` and confirm URL
+- [ ] Provide evidence: run `docker compose build` and `docker compose up` and confirm URL (blocked: Docker CLI not found in this environment)
+
 
 
