@@ -1,4 +1,6 @@
 # SkillMart — Student Marketplace (Frontend + Supabase migrations)
+Name: Joseph Seimien Mienwipia
+ID: 23488-2023
 
 ## App overview
 **SkillMart** is a student marketplace where learners can **buy and sell research papers, project code, books, and freelance time**.
