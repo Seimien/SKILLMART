@@ -1,14 +1,13 @@
-# TODO - Auth/dashboard loading fixes (SkillMart)
+# TODO
 
-## Step 1
-Add detailed error reporting in `skillmart/src/context/AppContext.tsx` for failures during:
-- `supabase.auth.getSession()`
-- `refreshProducts()`
-- `loadUserData()` (getProfile/ensureProfile + orders/wishlist/messages)
+## Docker containerization (SkillMart frontend)
+- [x] Add `skillmart/Dockerfile` (multi-stage build + nginx runtime for SPA)
+- [x] Add `skillmart/nginx.conf` (SPA route fallback to index.html)
+- [x] Add `skillmart/docker-compose.yml` (single service)
+- [x] Update `skillmart/README.md` with Docker build/run commands
+- [ ] Create git branch `blackboxai/docker-containerize`
+- [ ] Commit changes and push to GitHub
+- [ ] Provide evidence: run `docker compose build` and `docker compose up` and confirm URL (blocked: Docker CLI not found in this environment)
 
-## Step 2
-Re-run dev and reproduce login failure; capture console + toast error message.
 
-## Step 3
-Based on the captured error, adjust DB mapping/RLS/schema mismatch in `skillmart/src/lib/api.ts` or Supabase policies.
 

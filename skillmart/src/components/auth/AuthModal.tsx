@@ -58,7 +58,7 @@ export function AuthModal() {
           <button onClick={() => setAuthModal("none")} className="absolute top-4 right-4 opacity-60 hover:opacity-100 transition-opacity">
             <X size={20} />
           </button>
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-3 mb-1">
             <Store size={16} /><span className="font-bold text-sm">SkillMart</span>
           </div>
           <h2 className="text-2xl font-extrabold">{tab === "login" ? "Welcome back" : "Create your account"}</h2>
