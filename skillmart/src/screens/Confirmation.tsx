@@ -10,16 +10,18 @@ export function Confirmation() {
       <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
         <CheckCircle2 size={40} className="text-emerald-500" />
       </div>
-      <h1 className="text-2xl font-extrabold mb-2">Order Confirmed!</h1>
+      <h1 className="text-2xl font-extrabold mb-2">Checkout Successful!</h1>
       <p className="text-[var(--muted-fg)] text-sm mb-8">
-        Your order <span className="font-mono font-semibold text-[var(--foreground)]">#{order?.id}</span> has been placed.
-        It is now stored in Supabase.
+        Checkout complete! Your order <span className="font-mono font-semibold text-[var(--foreground)]">#{order?.id}</span> was placed successfully.
+        No real payment gateway is used—this order is stored for coursework review and appears in your order history + seller analytics.
       </p>
 
       <div className="card p-5 text-left mb-8">
         <div className="flex justify-between text-sm mb-3">
-          <span className="text-[var(--muted-fg)]">Order Date</span><span className="font-medium">{order?.date}</span>
+          <span className="text-[var(--muted-fg)]">Order Date</span>
+          <span className="font-medium">{order?.date}</span>
         </div>
+
         <div className="flex justify-between text-sm mb-3">
           <span className="text-[var(--muted-fg)]">Items</span><span className="font-medium">{order?.items.length ?? 0}</span>
         </div>
