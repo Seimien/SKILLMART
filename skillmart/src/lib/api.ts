@@ -282,6 +282,34 @@ export async function createListing(input: {
 }) {
   let filePath: string | null = null;
 
+  // Helpful diagnostics: this is the only place where listing creation talks to
+  // storage + the products table.
+  try {
+    if (input.file) {
+      filePath = `${input.sellerId}/${crypto.randomUUID()}-${input.file.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from("listing-files")
+        .upload(filePath, input.file);
+      if (uploadError) {
+        throw new Error(`Storage upload failed: ${uploadError.message}`);
+      }
+    }
+
+    const payload = {
+      seller_id: input.sellerId,
+      title: input.title,
+      category: input.category,
+      price: input.price,
+      description: input.description,
+      tags: input.tags,
+      image_url: input.imageUrl || fallbackImage,
+      file_path: filePath,
+      badge: "New",
+    };
+
+    // Important: avoid embedding `profiles` here.
+    // `PGRST201` can happen if PostgREST detects more than one relationship
+    // from `products` to `profiles`.
   if (input.file) {
     filePath = `${input.sellerId}/${crypto.randomUUID()}-${input.file.name}`;
     const { error: uploadError } = await supabase.storage
@@ -317,6 +345,14 @@ export async function createListing(input: {
 
     return mapProduct(data as ProductRow);
   } catch (e) {
+    // Surface *real* Supabase/PostgREST errors in the UI.
+    if (e instanceof Error) throw e;
+
+    try {
+      throw new Error(`Listing could not be created: ${JSON.stringify(e)}`);
+    } catch {
+      throw new Error(`Listing could not be created: ${String(e)}`);
+    }
     if (e instanceof Error) throw e;
     throw new Error(`Listing could not be created: ${String(e)}`);
   }

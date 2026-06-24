@@ -1,0 +1,13 @@
+To debug 'can not create Listing'
+
+Suspected failing step in src/lib/api.ts createListing():
+1) Storage upload to bucket 'listing-files'
+2) Insert into table 'products'
+
+Action:
+- Trigger Add Listing.
+- Copy the exact toast text and browser console error.
+- Then apply targeted fixes:
+  - storage bucket/policy or RLS/schema mismatch
+  - column name mismatch (seller_id, image_url, file_path, tags type, created_at)
+
